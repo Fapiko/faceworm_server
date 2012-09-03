@@ -4,6 +4,7 @@ import com.fapiko.faceworm.server.win32.User32;
 import com.sun.jna.platform.win32.WinDef;
 import com.sun.jna.platform.win32.WinDef.HWND;
 import com.sun.jna.platform.win32.WinUser;
+import org.zeromq.ZMQ;
 
 import java.awt.event.KeyEvent;
 
@@ -13,9 +14,33 @@ public class FacewormServer {
 
 	public void applicationLoop() {
 
-		pandoraHandle = User32.INSTANCE.FindWindow(null, "Pandora");
+		ZMQ.Context context = ZMQ.context(1);
+		ZMQ.Socket socket = context.socket(ZMQ.PAIR);
 
-		System.out.println(pandoraHandle.toString());
+		System.out.println("Connecting to hello world server...");
+		socket.connect("tcp://localhost:5555");
+
+		int i = 0;
+
+		while(true) {
+			socket.send(new String("Arnold Facepalmer").getBytes(), 0);
+			byte[] reply = socket.recv(ZMQ.NOBLOCK);
+
+			if (reply != null) {
+				System.out.println(new String(reply));
+			}
+
+			try {
+				Thread.sleep(10);
+			} catch (InterruptedException e) {
+				e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+			}
+
+			i++;
+
+		}
+
+//		pandoraHandle = User32.INSTANCE.FindWindow(null, "Pandora");
 
 	}
 
