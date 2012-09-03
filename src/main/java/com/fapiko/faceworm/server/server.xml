@@ -9,4 +9,5 @@
     <context:annotation-config />
 
     <bean id="facewormServer" class="com.fapiko.faceworm.server.FacewormServer" />
+    <bean id="user32" abstract="true" class="com.fapiko.faceworm.server.win32.User32" />
 </beans>

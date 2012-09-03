@@ -11,7 +11,7 @@ public class App {
 				"com/fapiko/faceworm/server/server.xml");
 
 		FacewormServer facewormServer = applicationContext.getBean("facewormServer", FacewormServer.class);
-        facewormServer.applicationLoop();
+		facewormServer.applicationLoop();
 
 	}
 
