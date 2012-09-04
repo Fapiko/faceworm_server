@@ -11,6 +11,9 @@ import java.awt.event.KeyEvent;
 
 public class FacewormServer {
 
+	private static final int VK_WIN_PLUS = 0xBC;
+	private static final int VK_WIN_MINUS = 0xBD;
+
 	private HWND pandoraHandle;
 	private boolean isWindows = false;
 
@@ -27,9 +30,9 @@ public class FacewormServer {
 
 		if (isWindows) {
 			pandoraHandle = User32.INSTANCE.FindWindow(null, "Pandora");
+			logger.info(pandoraHandle);
+			thumbsUpSong();
 		}
-
-		int i = 0;
 
 		while(true) {
 
@@ -83,8 +86,6 @@ public class FacewormServer {
 				e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
 			}
 
-			i++;
-
 		}
 
 	}
@@ -98,11 +99,11 @@ public class FacewormServer {
 	}
 
 	public void thumbsUpSong() {
-		sendKeystroke(KeyEvent.VK_PLUS);
+		sendKeystroke(VK_WIN_PLUS);
 	}
 
 	public void thumbsDownSong() {
-		sendKeystroke(KeyEvent.VK_MINUS);
+		sendKeystroke(VK_WIN_MINUS);
 	}
 
 	public void increaseVolume() {
@@ -127,8 +128,8 @@ public class FacewormServer {
 
 		if (isWindows) {
 
-			User32.INSTANCE.PostMessage(pandoraHandle, WinUser.WM_KEYDOWN, new WinDef.WPARAM(keystroke), new WinDef.LPARAM(0));
-			User32.INSTANCE.PostMessage(pandoraHandle, WinUser.WM_KEYUP, new WinDef.WPARAM(keystroke), new WinDef.LPARAM(0));
+			User32.INSTANCE.PostMessage(pandoraHandle, WinUser.WM_KEYDOWN, new WinDef.WPARAM(keystroke), new WinDef.LPARAM());
+			User32.INSTANCE.PostMessage(pandoraHandle, WinUser.WM_KEYUP, new WinDef.WPARAM(keystroke), new WinDef.LPARAM());
 
 		} else {
 			logger.warn("Operating system unsupported");
