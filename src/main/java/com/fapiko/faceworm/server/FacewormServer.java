@@ -11,7 +11,7 @@ import java.awt.event.KeyEvent;
 
 public class FacewormServer {
 
-	private static final int VK_WIN_PLUS = 0xBC;
+	private static final int VK_WIN_PLUS = 0xBB;
 	private static final int VK_WIN_MINUS = 0xBD;
 
 	private HWND pandoraHandle;
