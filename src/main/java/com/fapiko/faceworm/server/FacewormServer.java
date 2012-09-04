@@ -4,6 +4,7 @@ import com.fapiko.faceworm.server.win32.User32;
 import com.sun.jna.platform.win32.WinDef;
 import com.sun.jna.platform.win32.WinDef.HWND;
 import com.sun.jna.platform.win32.WinUser;
+import org.apache.log4j.Logger;
 import org.zeromq.ZMQ;
 
 import java.awt.event.KeyEvent;
@@ -11,27 +12,73 @@ import java.awt.event.KeyEvent;
 public class FacewormServer {
 
 	private HWND pandoraHandle;
+	private boolean isWindows = false;
+
+	private static Logger logger = Logger.getLogger(FacewormServer.class);
 
 	public void applicationLoop() {
+
+		isWindows = System.getProperty("os.name").toLowerCase().indexOf("win") >= 0;
 
 		ZMQ.Context context = ZMQ.context(1);
 		ZMQ.Socket socket = context.socket(ZMQ.PAIR);
 
-		System.out.println("Connecting to hello world server...");
-		socket.connect("tcp://localhost:5555");
+		socket.bind("tcp://*:5555");
+
+		if (isWindows) {
+			pandoraHandle = User32.INSTANCE.FindWindow(null, "Pandora");
+		}
 
 		int i = 0;
 
 		while(true) {
-			socket.send(new String("Arnold Facepalmer").getBytes(), 0);
+
 			byte[] reply = socket.recv(ZMQ.NOBLOCK);
 
 			if (reply != null) {
-				System.out.println(new String(reply));
+
+				String message = new String(reply);
+				String[] pieces = message.split("\\|");
+
+				logger.info(pieces.length);
+
+				if (pieces.length > 1 && pieces[0].equals("ACTION")) {
+
+					if (pieces[1].equals("NEXT_TRACK")) {
+
+						skipSong();
+
+					} else if (pieces[1].equals("PLAY_PAUSE")) {
+
+						togglePlayPause();
+
+					} else if (pieces[1].equals("THUMBS_UP")) {
+
+						thumbsUpSong();
+
+					} else if (pieces[1].equals("THUMBS_DOWN")) {
+
+						thumbsDownSong();
+
+					}
+
+				} else if (pieces.length == 1) {
+
+					if (pieces[0].equals("TERMINATE")) {
+
+						socket.close();
+						socket.bind("tcp://*:5555");
+
+					}
+
+				} else {
+					logger.warn("Message failed to split propertly");
+				}
+
 			}
 
 			try {
-				Thread.sleep(10);
+				Thread.sleep(50);
 			} catch (InterruptedException e) {
 				e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
 			}
@@ -39,8 +86,6 @@ public class FacewormServer {
 			i++;
 
 		}
-
-//		pandoraHandle = User32.INSTANCE.FindWindow(null, "Pandora");
 
 	}
 
@@ -78,9 +123,16 @@ public class FacewormServer {
 
 	public void sendKeystroke(int keystroke) {
 
-		User32.INSTANCE.PostMessage(pandoraHandle, WinUser.WM_KEYDOWN, new WinDef.WPARAM(keystroke), new WinDef.LPARAM(0));
-		User32.INSTANCE.PostMessage(pandoraHandle, WinUser.WM_KEYUP, new WinDef.WPARAM(keystroke), new WinDef.LPARAM(0));
+		logger.info("Sending keystroke " + keystroke);
 
+		if (isWindows) {
+
+			User32.INSTANCE.PostMessage(pandoraHandle, WinUser.WM_KEYDOWN, new WinDef.WPARAM(keystroke), new WinDef.LPARAM(0));
+			User32.INSTANCE.PostMessage(pandoraHandle, WinUser.WM_KEYUP, new WinDef.WPARAM(keystroke), new WinDef.LPARAM(0));
+
+		} else {
+			logger.warn("Operating system unsupported");
+		}
 	}
 
 	public void sendKeyCombination(int ... keystrokes) {
