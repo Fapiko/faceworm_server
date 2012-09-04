@@ -11,7 +11,7 @@ import java.awt.event.KeyEvent;
 
 public class FacewormServer {
 
-	private static final int VK_WIN_PLUS = 0xBB;
+	private static final int VK_WIN_PLUS = 0x6B;
 	private static final int VK_WIN_MINUS = 0xBD;
 
 	private HWND pandoraHandle;
@@ -128,8 +128,8 @@ public class FacewormServer {
 
 		if (isWindows) {
 
-			User32.INSTANCE.PostMessage(pandoraHandle, WinUser.WM_KEYDOWN, new WinDef.WPARAM(keystroke), new WinDef.LPARAM());
-			User32.INSTANCE.PostMessage(pandoraHandle, WinUser.WM_KEYUP, new WinDef.WPARAM(keystroke), new WinDef.LPARAM());
+			User32.INSTANCE.PostMessage(pandoraHandle, WinUser.WM_KEYDOWN, new WinDef.WPARAM(keystroke), new WinDef.LPARAM(0));
+			User32.INSTANCE.PostMessage(pandoraHandle, WinUser.WM_KEYUP, new WinDef.WPARAM(keystroke), new WinDef.LPARAM(0));
 
 		} else {
 			logger.warn("Operating system unsupported");
