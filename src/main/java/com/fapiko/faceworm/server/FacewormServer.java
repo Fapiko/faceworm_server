@@ -29,9 +29,10 @@ public class FacewormServer {
 		socket.bind("tcp://*:5555");
 
 		if (isWindows) {
+
 			pandoraHandle = User32.INSTANCE.FindWindow(null, "Pandora");
 			logger.info(pandoraHandle);
-			thumbsUpSong();
+
 		}
 
 		while(true) {
