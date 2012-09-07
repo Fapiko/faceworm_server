@@ -4,6 +4,7 @@ import com.fapiko.faceworm.server.win32.User32;
 import com.sun.jna.platform.win32.WinDef;
 import com.sun.jna.platform.win32.WinDef.HWND;
 import com.sun.jna.platform.win32.WinUser;
+import com.sun.jna.platform.unix.X11;
 import org.apache.log4j.Logger;
 import org.zeromq.ZMQ;
 
@@ -44,7 +45,7 @@ public class FacewormServer {
 				String message = new String(reply);
 				String[] pieces = message.split("\\|");
 
-				logger.info(pieces.length);
+				logger.debug(message);
 
 				if (pieces.length > 1 && pieces[0].equals("ACTION")) {
 
@@ -76,7 +77,10 @@ public class FacewormServer {
 					}
 
 				} else {
-					logger.warn("Message failed to split propertly");
+
+					logger.warn("Message failed to split properly");
+					logger.warn("Message received: " + message);
+
 				}
 
 			}
@@ -125,7 +129,7 @@ public class FacewormServer {
 
 	public void sendKeystroke(int keystroke) {
 
-		logger.info("Sending keystroke " + keystroke);
+		logger.debug("Sending keystroke " + keystroke);
 
 		if (isWindows) {
 
