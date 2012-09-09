@@ -68,15 +68,6 @@ public class FacewormServer {
 
 					}
 
-				} else if (pieces.length == 1) {
-
-					if (pieces[0].equals("TERMINATE")) {
-
-						socket.close();
-						socket.bind("tcp://*:5555");
-
-					}
-
 				} else {
 
 					logger.warn("Message failed to split properly");
