@@ -25,7 +25,7 @@ public class FacewormServer {
 		isWindows = System.getProperty("os.name").toLowerCase().indexOf("win") >= 0;
 
 		ZMQ.Context context = ZMQ.context(1);
-		ZMQ.Socket socket = context.socket(ZMQ.PAIR);
+		ZMQ.Socket socket = context.socket(ZMQ.SUB);
 
 		socket.bind("tcp://*:5555");
 

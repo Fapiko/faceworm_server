@@ -19,10 +19,10 @@ public class App {
 		AbstractApplicationContext applicationContext = new ClassPathXmlApplicationContext(
 				"com/fapiko/faceworm/server/server.xml");
 
-//		FacewormServer facewormServer = applicationContext.getBean("facewormServer", FacewormServer.class);
-//		facewormServer.applicationLoop();
+		FacewormServer facewormServer = applicationContext.getBean("facewormServer", FacewormServer.class);
+		facewormServer.applicationLoop();
 
-		TestX11Stuff test = new TestX11Stuff();
+//		TestX11Stuff test = new TestX11Stuff();
 
 	}
 
