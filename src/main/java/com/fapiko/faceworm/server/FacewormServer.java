@@ -26,6 +26,7 @@ public class FacewormServer {
 
 		ZMQ.Context context = ZMQ.context(1);
 		ZMQ.Socket socket = context.socket(ZMQ.SUB);
+		socket.subscribe("ACTION".getBytes());
 
 		socket.bind("tcp://*:5555");
 
