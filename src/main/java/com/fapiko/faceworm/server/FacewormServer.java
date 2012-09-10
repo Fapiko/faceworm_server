@@ -4,7 +4,6 @@ import com.fapiko.faceworm.server.win32.User32;
 import com.sun.jna.platform.win32.WinDef;
 import com.sun.jna.platform.win32.WinDef.HWND;
 import com.sun.jna.platform.win32.WinUser;
-import com.sun.jna.platform.unix.X11;
 import org.apache.log4j.Logger;
 import org.zeromq.ZMQ;
 
@@ -17,29 +16,22 @@ public class FacewormServer {
 	private static final int APPLICATION_LOOP_DELAY = 50;
 	private static final int HEALTHCHECK_DELAY = 30000;
 
-	private HWND pandoraHandle;
+	private static Logger logger = Logger.getLogger(FacewormServer.class);
+
 	private boolean isWindows = false;
 
-	private static Logger logger = Logger.getLogger(FacewormServer.class);
+	private HWND pandoraHandle;
+	private ZMQ.Context context;
 
 	public void applicationLoop() {
 
-		isWindows = System.getProperty("os.name").toLowerCase().indexOf("win") >= 0;
+		isWindows = System.getProperty("os.name").toLowerCase().contains("win");
 
-		ZMQ.Context context = ZMQ.context(1);
-		ZMQ.Socket socket = context.socket(ZMQ.SUB);
-		ZMQ.Socket socketHealthcheck = context.socket(ZMQ.PUB);
-		socket.subscribe("ACTION".getBytes());
+		context = ZMQ.context(1);
+		ZMQ.Socket socket = instantiateSubscriber(5555, "ACTION");
+//		ZMQ.Socket socketHealthcheck = instantiatePublisher(5556);
 
-		socket.bind("tcp://*:5555");
-		socketHealthcheck.bind("tcp://*:5556");
-
-		if (isWindows) {
-
-			pandoraHandle = User32.INSTANCE.FindWindow(null, "Pandora");
-			logger.info(pandoraHandle);
-
-		}
+		pandoraHandle = getPandoraHandle();
 
 		while(true) {
 
@@ -64,8 +56,8 @@ public class FacewormServer {
 						togglePlayPause();
 
 					} else if (pieces[1].equals("THUMBS_UP")) {
-						thumbsUpSong();
 
+						thumbsUpSong();
 
 					} else if (pieces[1].equals("THUMBS_DOWN")) {
 
@@ -82,9 +74,11 @@ public class FacewormServer {
 
 			}
 
+			// The server side healthcheck should just refresh the Pandora handle in the event the user has opened a
+			// new instance of the application
 			healthcheckTime += APPLICATION_LOOP_DELAY;
 			if (healthcheckTime >= HEALTHCHECK_DELAY) {
-				socketHealthcheck.send("ACTION|HEALTHCHECK".getBytes(), 0);
+				pandoraHandle = getPandoraHandle();
 			}
 
 			try {
@@ -97,6 +91,57 @@ public class FacewormServer {
 
 	}
 
+	/**
+	 * Grabs the handle of the Pandora window (currently only supports Windows)
+	 * @return
+	 */
+	private HWND getPandoraHandle() {
+
+		if (isWindows) {
+
+			HWND handle = User32.INSTANCE.FindWindow(null, "Pandora");
+			logger.info(handle);
+
+			return handle;
+
+		} else {
+			return new HWND();
+		}
+
+	}
+
+	/**
+	 * Instantiates the <strong>sub</strong>scriber side of a Pub/Sub connection
+	 * @param port
+	 * @return
+	 */
+	private ZMQ.Socket instantiateSubscriber(int port, String filter) {
+
+		ZMQ.Socket socket = context.socket(ZMQ.SUB);
+		socket.subscribe(filter.getBytes());
+		socket.bind(String.format("tcp://*:%d", port));
+
+		return socket;
+
+	}
+
+	/**
+	 * Instantiates the <strong>pub</strong>lisher side of a Pub/Sub connection
+	 * @param port
+	 * @return
+	 */
+	private ZMQ.Socket instantiatePublisher(int port) {
+
+		ZMQ.Socket socket = context.socket(ZMQ.PUB);
+		socket.bind("tcp://*:5556");
+
+		return socket;
+
+	}
+
+	/**
+	 * Sends the key which toggles play/pause in the Pandora client
+	 */
 	public void togglePlayPause() {
 		sendKeystroke(KeyEvent.VK_SPACE);
 	}
@@ -129,20 +174,30 @@ public class FacewormServer {
 		sendKeyCombination(0x10, 0x28);
 	}
 
+	/**
+	 * Sends a keystroke to the Pandora process (currently only supports Windows)
+	 * @param keystroke
+	 */
 	public void sendKeystroke(int keystroke) {
 
 		logger.debug("Sending keystroke " + keystroke);
 
 		if (isWindows) {
 
-			User32.INSTANCE.PostMessage(pandoraHandle, WinUser.WM_KEYDOWN, new WinDef.WPARAM(keystroke), new WinDef.LPARAM(0));
-			User32.INSTANCE.PostMessage(pandoraHandle, WinUser.WM_KEYUP, new WinDef.WPARAM(keystroke), new WinDef.LPARAM(0));
+			User32.INSTANCE.PostMessage(pandoraHandle, WinUser.WM_KEYDOWN, new WinDef.WPARAM(keystroke),
+					new WinDef.LPARAM(0));
+			User32.INSTANCE.PostMessage(pandoraHandle, WinUser.WM_KEYUP, new WinDef.WPARAM(keystroke),
+					new WinDef.LPARAM(0));
 
 		} else {
 			logger.warn("Operating system unsupported");
 		}
 	}
 
+	/**
+	 * Experimental method for sending keyboard combinations to a process, currently <strong>not</strong> working
+	 * @param keystrokes
+	 */
 	public void sendKeyCombination(int ... keystrokes) {
 
 		/*
@@ -168,11 +223,13 @@ public class FacewormServer {
 //		User32.INSTANCE.PostMessage(pandoraHandle, WinUser.WM_KEYUP, new WinDef.WPARAM(0x10), new WinDef.LPARAM(0xC02A0000));
 
 		for(int keystroke : keystrokes) {
-			User32.INSTANCE.SendMessage(pandoraHandle, WinUser.WM_KEYDOWN, new WinDef.WPARAM(keystroke), new WinDef.LPARAM(0x80000000));
+			User32.INSTANCE.SendMessage(pandoraHandle, WinUser.WM_KEYDOWN, new WinDef.WPARAM(keystroke),
+					new WinDef.LPARAM(0x80000000));
 		}
 
 		for(int keystroke : keystrokes) {
-			User32.INSTANCE.SendMessage(pandoraHandle, WinUser.WM_KEYUP, new WinDef.WPARAM(keystroke), new WinDef.LPARAM());
+			User32.INSTANCE.SendMessage(pandoraHandle, WinUser.WM_KEYUP, new WinDef.WPARAM(keystroke),
+					new WinDef.LPARAM());
 		}
 
 	}
