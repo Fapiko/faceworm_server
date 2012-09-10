@@ -19,6 +19,7 @@ public class FacewormServer {
 	private static Logger logger = Logger.getLogger(FacewormServer.class);
 
 	private boolean isWindows = false;
+	private boolean runApplicationLoop = true;
 
 	private HWND pandoraHandle;
 	private ZMQ.Context context;
@@ -29,11 +30,11 @@ public class FacewormServer {
 
 		context = ZMQ.context(1);
 		ZMQ.Socket socket = instantiateSubscriber(5555, "ACTION");
-//		ZMQ.Socket socketHealthcheck = instantiatePublisher(5556);
+		ZMQ.Socket socketHealthcheck = instantiatePublisher(5556);
 
 		pandoraHandle = getPandoraHandle();
 
-		while(true) {
+		while(runApplicationLoop) {
 
 			int healthcheckTime = 0;
 			byte[] reply = socket.recv(ZMQ.NOBLOCK);
@@ -63,6 +64,11 @@ public class FacewormServer {
 
 						thumbsDownSong();
 
+					} else if (pieces[1].equals("SERVER_SHUTDOWN")) {
+
+						logger.info("Stopping main application loop...");
+						runApplicationLoop = false;
+
 					}
 
 				} else {
@@ -74,11 +80,14 @@ public class FacewormServer {
 
 			}
 
-			// The server side healthcheck should just refresh the Pandora handle in the event the user has opened a
+			// The server side healthcheck should also refresh the Pandora handle in the event the user has opened a
 			// new instance of the application
 			healthcheckTime += APPLICATION_LOOP_DELAY;
 			if (healthcheckTime >= HEALTHCHECK_DELAY) {
+
 				pandoraHandle = getPandoraHandle();
+				socketHealthcheck.send("ACTION|HEALTHCHECK".getBytes(), 0);
+
 			}
 
 			try {
@@ -93,7 +102,7 @@ public class FacewormServer {
 
 	/**
 	 * Grabs the handle of the Pandora window (currently only supports Windows)
-	 * @return
+	 * @return Returns the window handle of the Pandora application
 	 */
 	private HWND getPandoraHandle() {
 
@@ -112,8 +121,8 @@ public class FacewormServer {
 
 	/**
 	 * Instantiates the <strong>sub</strong>scriber side of a Pub/Sub connection
-	 * @param port
-	 * @return
+	 * @param port Port to listen on
+	 * @return Returns the newly created socket
 	 */
 	private ZMQ.Socket instantiateSubscriber(int port, String filter) {
 
@@ -127,13 +136,13 @@ public class FacewormServer {
 
 	/**
 	 * Instantiates the <strong>pub</strong>lisher side of a Pub/Sub connection
-	 * @param port
-	 * @return
+	 * @param port Port to listen on
+	 * @return Returns the newly created socket
 	 */
 	private ZMQ.Socket instantiatePublisher(int port) {
 
 		ZMQ.Socket socket = context.socket(ZMQ.PUB);
-		socket.bind("tcp://*:5556");
+		socket.bind(String.format("tcp://*:%s", port));
 
 		return socket;
 
@@ -158,7 +167,7 @@ public class FacewormServer {
 		sendKeystroke(VK_WIN_MINUS);
 	}
 
-	public void increaseVolume() {
+	/*public void increaseVolume() {
 		sendKeystroke(KeyEvent.VK_UP);
 	}
 
@@ -172,11 +181,11 @@ public class FacewormServer {
 
 	public void muteVolume() {
 		sendKeyCombination(0x10, 0x28);
-	}
+	}*/
 
 	/**
 	 * Sends a keystroke to the Pandora process (currently only supports Windows)
-	 * @param keystroke
+	 * @param keystroke Integer value of the keyboard key to send
 	 */
 	public void sendKeystroke(int keystroke) {
 
@@ -198,9 +207,9 @@ public class FacewormServer {
 	 * Experimental method for sending keyboard combinations to a process, currently <strong>not</strong> working
 	 * @param keystrokes
 	 */
-	public void sendKeyCombination(int ... keystrokes) {
+	/*public void sendKeyCombination(int ... keystrokes) {
 
-		/*
+		*//*
 		Watching the messages fly across the wire with Spy++ indicates the following combination should work
 		but isn't. I'm guessing the keyboard state may be a little whacky and we might have to make a call to
 		GetKeyState to check it.
@@ -216,7 +225,7 @@ public class FacewormServer {
 		<03299> 001F0170 P WM_KEYDOWN nVirtKey:VK_DOWN cRepeat:1 ScanCode:50 fExtended:1 fAltDown:0 fRepeat:0 fUp:0
 		<03300> 001F0170 P WM_KEYUP nVirtKey:VK_DOWN cRepeat:1 ScanCode:50 fExtended:1 fAltDown:0 fRepeat:1 fUp:1
 		<03301> 001F0170 P WM_KEYUP nVirtKey:VK_SHIFT cRepeat:0 ScanCode:2A fExtended:0 fAltDown:0 fRepeat:1 fUp:1
-		 */
+		 *//*
 //		User32.INSTANCE.PostMessage(pandoraHandle, WinUser.WM_KEYDOWN, new WinDef.WPARAM(0x10), new WinDef.LPARAM(0x002A0001));
 //		User32.INSTANCE.PostMessage(pandoraHandle, WinUser.WM_KEYDOWN, new WinDef.WPARAM(0x28), new WinDef.LPARAM(0x01500001));
 //		User32.INSTANCE.PostMessage(pandoraHandle, WinUser.WM_KEYUP, new WinDef.WPARAM(0x28), new WinDef.LPARAM(0xC1500001));
@@ -232,6 +241,6 @@ public class FacewormServer {
 					new WinDef.LPARAM());
 		}
 
-	}
+	}*/
 
 }
