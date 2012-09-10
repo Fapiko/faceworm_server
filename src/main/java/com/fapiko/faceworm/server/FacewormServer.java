@@ -84,13 +84,13 @@ public class FacewormServer {
 
 			healthcheckTime += APPLICATION_LOOP_DELAY;
 			if (healthcheckTime >= HEALTHCHECK_DELAY) {
-				socketHealthcheck.send("APPLICATION|HEALTHCHECK".getBytes(), 0);
+				socketHealthcheck.send("ACTION|HEALTHCHECK".getBytes(), 0);
 			}
 
 			try {
 				Thread.sleep(APPLICATION_LOOP_DELAY);
 			} catch (InterruptedException e) {
-				e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+				e.printStackTrace();
 			}
 
 		}
