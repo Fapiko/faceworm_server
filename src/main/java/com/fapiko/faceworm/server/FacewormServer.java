@@ -14,6 +14,8 @@ public class FacewormServer {
 
 	private static final int VK_WIN_PLUS = 0x6B;
 	private static final int VK_WIN_MINUS = 0xBD;
+	private static final int APPLICATION_LOOP_DELAY = 50;
+	private static final int HEALTHCHECK_DELAY = 30000;
 
 	private HWND pandoraHandle;
 	private boolean isWindows = false;
@@ -26,9 +28,11 @@ public class FacewormServer {
 
 		ZMQ.Context context = ZMQ.context(1);
 		ZMQ.Socket socket = context.socket(ZMQ.SUB);
+		ZMQ.Socket socketHealthcheck = context.socket(ZMQ.PUB);
 		socket.subscribe("ACTION".getBytes());
 
 		socket.bind("tcp://*:5555");
+		socketHealthcheck.bind("tcp://*:5556");
 
 		if (isWindows) {
 
@@ -39,6 +43,7 @@ public class FacewormServer {
 
 		while(true) {
 
+			int healthcheckTime = 0;
 			byte[] reply = socket.recv(ZMQ.NOBLOCK);
 
 			if (reply != null) {
@@ -59,8 +64,8 @@ public class FacewormServer {
 						togglePlayPause();
 
 					} else if (pieces[1].equals("THUMBS_UP")) {
-
 						thumbsUpSong();
+
 
 					} else if (pieces[1].equals("THUMBS_DOWN")) {
 
@@ -77,8 +82,13 @@ public class FacewormServer {
 
 			}
 
+			healthcheckTime += APPLICATION_LOOP_DELAY;
+			if (healthcheckTime >= HEALTHCHECK_DELAY) {
+				socketHealthcheck.send("APPLICATION|HEALTHCHECK".getBytes(), 0);
+			}
+
 			try {
-				Thread.sleep(50);
+				Thread.sleep(APPLICATION_LOOP_DELAY);
 			} catch (InterruptedException e) {
 				e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
 			}
