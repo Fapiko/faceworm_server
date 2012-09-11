@@ -34,9 +34,10 @@ public class FacewormServer {
 
 		pandoraHandle = getPandoraHandle();
 
+		int healthcheckTime = 0;
+
 		while(runApplicationLoop) {
 
-			int healthcheckTime = 0;
 			byte[] reply = socket.recv(ZMQ.NOBLOCK);
 
 			if (reply != null) {
@@ -86,7 +87,9 @@ public class FacewormServer {
 			if (healthcheckTime >= HEALTHCHECK_DELAY) {
 
 				pandoraHandle = getPandoraHandle();
+				logger.debug("Sending Healthcheck");
 				socketHealthcheck.send("ACTION|HEALTHCHECK".getBytes(), 0);
+				healthcheckTime = 0;
 
 			}
 
@@ -109,7 +112,7 @@ public class FacewormServer {
 		if (isWindows) {
 
 			HWND handle = User32.INSTANCE.FindWindow(null, "Pandora");
-			logger.info(handle);
+			logger.trace(handle);
 
 			return handle;
 
@@ -142,7 +145,7 @@ public class FacewormServer {
 	private ZMQ.Socket instantiatePublisher(int port) {
 
 		ZMQ.Socket socket = context.socket(ZMQ.PUB);
-		socket.bind(String.format("tcp://*:%s", port));
+		socket.bind(String.format("tcp://*:%d", port));
 
 		return socket;
 
